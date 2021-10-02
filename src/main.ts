@@ -7,7 +7,7 @@ function assets() {
 }
 
 function iksir(element: HTMLElement) {
-
+  Iksir(element)
 }
 
 function piksi(element: HTMLElement) {
@@ -32,6 +32,6 @@ function piksi(element: HTMLElement) {
 
 
 export default function app(element: HTMLElement) {
-  piksi(element)
-  //iksir(element)
+  //piksi(element)
+  iksir(element)
 }
