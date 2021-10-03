@@ -201,12 +201,45 @@ Pixi.js has a matrix class, that allows 2d transformations of points. Translate,
 Let's use it to define the projection matrix:
 
 ```js
+
+  // Pixi.js matrix has this structure  
+  // a c tx
+  // b d ty
+  // 0 0 1
+  export default class Matrix {
+
+    // projection matrix is defined like this
+    static projection = (width: number, height: number) => {
+      let b = 0,
+        c = 0
   
+      let a = 1 / width * 2,
+      d = -1 / height * 2,
+      tx = -1,
+      ty = 1
+  
+      return new Matrix(a, b, c, d, tx, ty)
+    } 
+  
+  }
 ```
 
+Let's say we pass the uniform like this:
 
-We have to keep track of attribute locations in our shader, so let's keep this data in a class, and update `generateProgram` to return an instance. 
+```js
+  let projectionMatrix = Matrix.projection(320, 180)
 
+  // ...
+
+
+  let program = generateProgram(gl, vSource, fSource)
+
+  gl.useProgram(program.program)
+  gl.uniformMatrix3fv(program.uniformData['projectionMatrix'].location, false, this.projectionMatrix.array_t)
+
+```
+
+We need uniform and attribute locations in the shader, so let's keep this data in a class, and update `generateProgram` to return all of this data. 
 
 ```js
 
@@ -217,14 +250,100 @@ export interface IAttributeData {
   name: string;
 }
 
+export interface IUniformData {
+  name: string;
+  index: number;
+  location: WebGLUniformLocation;
+}
+
 export class Program {
   
      constructor(
+       readonly uniformData: { [key: string]: IUniformData },
        readonly attributeData: { [key: string]: IAttributeData },
      readonly program: WebGLProgram) {}
 }
 
 
 ```
+
+Now we can pass coordinates in 320x180 dimensions, let's also make sure we use `Float32Array` buffers so we don't overflow.
+
+One important thing is not to mismatch the types of data in the buffers. For example
+
+```js
+
+    gl.vertexAttribPointer(0, 2, gl.UNSIGNED_BYTE, false, 0, 0)
+   
+    // ... gl.drawElements(gl.TRIANGLES, 3, gl.UNSIGNED_BYTE, 0)
+
+```
+
+the third argument to `vertexAttribPointer` is the data type of the attributes buffer.
+And `gl.drawElements` is the data type for the index buffer.
+
+## Draw more quads with transform
+
+Let's draw more quads at random positions like:
+
+```js
+  // draw(x, y)
+  draw(10, 10)
+  draw(30, 30)
+  draw(80, 100)
+  flush()
+``` 
+
+We can do it like this:
+
+```js
+  
+  let elements = []
+  function draw(x, y) {
+
+    elements.push(
+      Rectangle.unit.transform(
+        Matrix.unit
+        .scale(w, h)
+        .translate(x, y)))
+
+  }
+
+```
+
+`draw` only pushes a rectangle to an array. Don't worry about how we build the rectangle, it's intuitive though. Later Rectangle will give us the `vertexData` to push into the attributes buffer.
+
+```js
+
+  function flush() {
+
+
+    let attributesBuffer = new Float32Array(4 * 4 * 2),
+        indexBuffer = new Uint16Array(4 * 6)
+
+
+    
+    this.elements.forEach((element, i) => {
+
+      let {
+        vertexData,
+        indices } = element
+
+      for (let k = 0; k < vertexData.length; k++) {
+        attributeBuffer[i * vertexData.length + k] = vertexData[k]
+      }
+
+      for (let k = 0; k < indices.length; k++) {
+        indexBuffer[i * indices.length + k] = i * 4 + indices[k]
+      }
+    })
+
+    // usual draw operations
+
+  }
+
+```
+
+We copy `vertexData` and `indices` of the rectangles to draw, into respective buffers. Later to pass to webgl.
 
 
