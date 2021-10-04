@@ -12,7 +12,7 @@ export abstract class IBench {
   constructor(readonly ctx: BenchCtx) {
 
     this.quad = Quad.make(this.image,
-      0, 0, 10, 10)
+      0, 0, 128, 128)
  
   }
 
@@ -62,19 +62,19 @@ export class Second extends IBench {
     this.x += (320 / (ticks.second * 6)) * dt
     this.y += (180 / (ticks.second * 6)) * dt
 
-    this.theta += (Math.PI * 2 / (ticks.second * 6)) * dt
+    this.theta += (Math.PI * 2 / (ticks.second * 16)) * dt
 
     this.x %= 320
     this.y %= 180
   }
 
   draw() {
-    this.play.draw(this.quad, this.x, this.y) 
+    this.play.draw(this.quad, this.x, this.y, 0, 0.5, 0.5) 
     this.play.draw(this.quad, this.x + Math.sin(this.theta) * 10, 
-      this.y + Math.cos(this.theta)*10, this.theta, 3, 3) 
+      this.y + Math.cos(this.theta)*10, this.theta) 
 
-    this.play.draw(this.quad, 160, 90, 0, 3, 3)
-    this.play.draw(this.quad, 160, 90, this.theta, 3, 3)
+    this.play.draw(this.quad, 160, 90, 0, 0.5, 0.5)
+    this.play.draw(this.quad, 160, 90, this.theta, 0.7, 0.7)
   }
 }
 

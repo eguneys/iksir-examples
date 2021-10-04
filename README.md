@@ -392,6 +392,8 @@ Let's say we give the quad a texture:
 
 `default.vert`:
 ```
+  // ...
+
   attribute vec2 aTextureCoord;
 
   varying vec2 vTextureCoord;
@@ -402,5 +404,113 @@ Let's say we give the quad a texture:
   }  
 ```
 
-Now we see white quads, now let's upload the texture into webgl.
+Now we see white quads, now let's upload a texture into webgl.
 
+```js
+
+
+    let glTexture = gl.createTexture()
+
+
+    gl.bindTexture(gl.TEXTURE_2D, glTexture)
+
+    gl.texImage2D(gl.TEXTURE_2D, 0,
+      gl.RGBA,
+      1,
+      1,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+    new Uint8Array([0, 0, 255, 255]))
+
+
+    // gl.drawElements(gl.TRIANGLES, indexBuffer.length, gl.UNSIGNED_SHORT, 0)
+
+```
+
+We uploaded a blue texture but we can't see it, let's put the uv data into `attributeBuffer` like this: 
+
+```js
+ 
+    let aIndex = 0
+
+    this.elements.forEach((element, i) => {
+      let {
+        vertexData,
+        indices } = element
+
+      let { fsUv } = this.quads[i]
+
+      for (let k = 0; k < vertexData.length; k+=2) {
+        attributeBuffer[aIndex++] = vertexData[k]
+        attributeBuffer[aIndex++] = vertexData[k+1]
+        attributeBuffer[aIndex++] = fsUv[k]
+        attributeBuffer[aIndex++] = fsUv[k+1]
+      }
+
+      for (let k = 0; k < indices.length; k++) {
+        indexBuffer[i * indices.length + k] = i * 4 + indices[k]
+      }
+    })
+
+```
+
+fsUv holds texture uv's for an element. Let's make a Quad class that holds that information:
+
+```js
+  
+export default class Quad {
+
+  static make = (texture: HTMLImageElement,
+    x: number,
+    y: number,
+    w: number,
+    h: number) => new Quad(texture,
+      Rectangle.make(x, y, w, h))
+
+  readonly fsUv: Float32Array
+  // ... 
+```
+
+We can use it like this: 
+
+```js
+  
+  
+  draw = (quad: Quad, x: number, y: number, //...
+
+    this.quads.push(quad)
+    // ...
+```
+
+Everytime we draw we also push a quad to `this.quads`.
+
+Now the quads turned blue, let's upload a texture from one of the quads.
+
+```js
+    let texture = this.quads[0].texture
+
+    gl.texImage2D(gl.TEXTURE_2D, 0,
+      gl.RGBA, texture.width, texture.height, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+      texture)
+
+    gl.generateMipmap(gl.TEXTURE_2D)
+
+```
+
+We should scale the element to the texture width:
+
+```js
+   draw = (quad: Quad // ...
+
+    this.elements.push(
+      Rectangle.unit.transform(
+        Matrix.unit
+        .scale(quad.tw, quad.th)
+        .scale(sx, sy)
+        .translate(-sx * quad.tw * 0.5, -sy * quad.th * 0.5)
+        .rotate(r)
+        .translate(sx * quad.tw * 0.5, sy * quad.th * 0.5)
+        .translate(x, y))
+    // ...
+```
