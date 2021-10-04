@@ -34,7 +34,7 @@ The canvas's hardcoded dimensions are `320x180`. We will draw inside this area. 
 Finally we acquire a webgl2 rendering context:
 
 ```js
-   let gl = $canvas.getContext('webgl2');
+   let gl = $canvas.getContext('webgl2', { antialias: false });
 ```
 
 ## Clear the screen
@@ -346,4 +346,61 @@ We can do it like this:
 
 We copy `vertexData` and `indices` of the rectangles to draw, into respective buffers. Later to pass to webgl.
 
+### Transforming Rectangle with Matrix 
+
+`Rectangle.unit` returns the `1x1` rectangle at `0,0` position. `rectangle.transform` transforms the rectangle with a matrix operation. Basically multiplying every vertex with the matrix and returning a new rectangle. `Matrix.unit` is the identity matrix. Matrix class has api like `translate`, `rotate`, `scale`, that applies the transformation to the current matrix returning a new matrix. 
+
+
+Now we can draw multiple rectangles with various transformations.
+
+
+## Benchmark, Animation
+
+Let's say we draw lots of quads every frame, and test our framerate:
+
+```js
+
+function benchmark1(play: Play) {
+
+  for (let i = 0; i < 100; i++) {
+    play.draw(Math.random() * 320, Math.random() * 180)
+  }
+
+}
+
+```
+
+Don't forget to adjust the buffer sizes to actually contain that many elements.
+
+For now I don't really see any performance problems, I guess that's a good thing.
+
+## Texture the Quad
+
+Let's say we give the quad a texture:
+
+
+`default.frag`:
+```
+  varying vec2 vTextureCoord;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+    gl_fragColor *= texture2D(uSampler, vTextureCoord)
+  }  
+```
+
+`default.vert`:
+```
+  attribute vec2 aTextureCoord;
+
+  varying vec2 vTextureCoord;
+
+  void main(void) {
+    // ...
+    vTextureCoord = aTextureCoord;
+  }  
+```
+
+Now we see white quads, now let's upload the texture into webgl.
 
